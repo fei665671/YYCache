@@ -52,7 +52,7 @@ static NSString *const kTrashDirectoryName = @"trash";
     last_access_time    integer,
     extended_data       blob,
     primary key(key)
- ); 
+ );
  create index if not exists last_access_time_idx on manifest(last_access_time);
  */
 
@@ -124,7 +124,18 @@ static UIApplication *_YYSharedApplication() {
     BOOL retry = NO;
     BOOL stmtFinalized = NO;
     
-    if (_dbStmtCache) CFRelease(_dbStmtCache);
+    if (_dbStmtCache) {
+        CFIndex size = CFDictionaryGetCount(_dbStmtCache);
+        CFTypeRef *valuesRef = (CFTypeRef *)malloc(size * sizeof(CFTypeRef));
+        CFDictionaryGetKeysAndValues(_dbStmtCache, NULL, (const void **)valuesRef);
+        const sqlite3_stmt **stmts = (const sqlite3_stmt **)valuesRef;
+        for (CFIndex i = 0; i < size; i ++) {
+            sqlite3_stmt *stmt = stmts[i];
+            sqlite3_finalize(stmt);
+        }
+        free(valuesRef);
+        CFRelease(_dbStmtCache);
+    }
     _dbStmtCache = NULL;
     
     do {
